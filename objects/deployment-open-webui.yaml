@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  namespace: aitools
+spec:
+  # Recreate: RWO volume cannot attach to two pods on different nodes during a rolling update
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: open-webui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: open-webui
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 14587
+        runAsGroup: 14587
+        fsGroup: 14587
+        seLinuxOptions:
+          level: "s0:c363,c784"
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: open-webui
+        image: ghcr.io/open-webui/open-webui:v0.11.0
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "3072Mi"
+          limits:
+            memory: "3072Mi"
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+        env:
+        - name: http_proxy
+          value: "http://tinyproxy.aitools.svc.cluster.local.:80"
+        - name: https_proxy
+          value: "http://tinyproxy.aitools.svc.cluster.local.:80"
+        - name: no_proxy
+          value: "localhost,127.0.0.1,::1,otari,.cluster.local"
+        - name: NO_PROXY
+          value: "localhost,127.0.0.1,::1,otari,.cluster.local"
+        - name: WEBUI_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: open-webui
+              key: WEBUI_SECRET_KEY
+        volumeMounts:
+          - mountPath: /app/backend/data
+            name: data
+          - mountPath: /app/backend/open_webui/static/
+            name: static
+          - mountPath: /app/backend/data/cache
+            name: cache
+          - mountPath: /tmp
+            name: tmp
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: open-webui
+      - name: static
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+      - name: cache
+        emptyDir: {}

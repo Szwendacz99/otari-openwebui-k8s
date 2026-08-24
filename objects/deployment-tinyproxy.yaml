@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinyproxy
+  namespace: aitools
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tinyproxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tinyproxy
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 34439
+        runAsGroup: 34439
+        fsGroup: 34439
+        seLinuxOptions:
+          level: "s0:c563,c777"
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: tinyproxy
+        resources:
+          requests:
+            memory: "20Mi"
+          limits:
+            memory: "80Mi"
+        image: ajoergensen/tinyproxy:latest
+        imagePullPolicy: Always
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          tcpSocket:
+            port: 8888
+          initialDelaySeconds: 5
+          periodSeconds: 15
+          timeoutSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: 8888
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+        volumeMounts:
+          - mountPath: /tmp
+            name: tmp
+          - mountPath: /var/run
+            name: varrun
+          - name: conf
+            mountPath: "/etc/tinyproxy"
+            readOnly: true
+      volumes:
+      - name: conf
+        configMap:
+          name: tinyproxy
+      - name: tmp
+        emptyDir: {}
+      - name: varrun
+        emptyDir:
+          medium: Memory

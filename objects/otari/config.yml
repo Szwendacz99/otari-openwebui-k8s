@@ -1,0 +1,14 @@
+# Configuration for otari-gateway
+
+# Database connection URL
+database_url: "sqlite:////data/otari.db"
+
+host: "0.0.0.0"
+
+# Do not create a client API key automatically on first startup
+bootstrap_api_key: false
+
+require_pricing: false
+providers:
+  mistral:
+    api_key: changeme

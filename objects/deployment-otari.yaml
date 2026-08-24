@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otari
+  namespace: aitools
+spec:
+  # Recreate: RWO volume cannot attach to two pods on different nodes during a rolling update
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otari
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otari
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 12906
+        runAsGroup: 12906
+        fsGroup: 12906
+        seLinuxOptions:
+          level: "s0:c262,c830"
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: otari
+        image: docker.io/mzdotai/otari:latest # if you want more stable experience, set tag to selected version
+        imagePullPolicy: Always
+        command:
+        - otari
+        - serve
+        - --config
+        - /app/config.yml
+        env:
+        # Kubernetes injects OTARI_PORT=tcp://<otari-svc-ip>:80 into the container env
+        # (service links derived from the otari Service); Otari reads it as its port
+        # override, so pin the real port explicitly - explicit env wins over injected
+        - name: OTARI_PORT
+          value: "8000"
+        - name: http_proxy
+          value: "http://tinyproxy.aitools.svc.cluster.local.:80"
+        - name: https_proxy
+          value: "http://tinyproxy.aitools.svc.cluster.local.:80"
+        - name: OTARI_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: otari
+              key: OTARI_SECRET_KEY
+        resources:
+          requests:
+            memory: "500Mi"
+          limits:
+            memory: "600Mi"
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /health/liveness
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 15
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health/readiness
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        volumeMounts:
+          - mountPath: /data/
+            name: data
+          - mountPath: /app/config.yml
+            subPath: config.yml
+            name: config
+      volumes:
+      - name: config
+        secret:
+          secretName: otari
+      - name: data
+        persistentVolumeClaim:
+          claimName: otari-db

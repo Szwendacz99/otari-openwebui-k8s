@@ -1,0 +1,74 @@
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - README.md
+      - images/**
+      - objects/**
+      - mkdocs.yml
+      - .github/workflows/deploy-site.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install MkDocs Material
+        run: pip install "mkdocs-material~=9.6"
+
+      # docs/ is generated, not committed: README becomes the home page and
+      # images/objects are copied so the tutorial's relative links keep working
+      - name: Assemble docs/
+        run: |
+          mkdir -p docs
+          cp README.md docs/index.md
+          cp -r images objects docs/
+
+      # self-hosted so diagrams render without third-party CDN access
+      - name: Vendor mermaid.js
+        run: |
+          mkdir -p docs/assets
+          curl --fail --silent --show-error --location \
+            -o docs/assets/mermaid.min.js \
+            https://unpkg.com/mermaid@11.17.1/dist/mermaid.min.js
+
+      - name: Build site
+        run: mkdocs build --strict --site-dir site
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

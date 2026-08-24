@@ -1,0 +1,51 @@
+site_name: Secure Otari + Open WebUI Kubernetes Setup
+site_description: >-
+  Tutorial: deploying Otari LLM gateway and Open WebUI securely on Kubernetes
+  (k3s) with network policies, tinyproxy egress control, read-only containers
+  and SELinux MCS labeling.
+# repo_url: https://github.com/Szwendacz99/otari-openwebui-k8s
+
+docs_dir: docs
+
+# Self-hosted mermaid (vendored in CI, see .github/workflows/deploy-site.yaml):
+# Material otherwise lazy-loads mermaid from unpkg.com at view time; defining
+# window.mermaid ourselves makes diagrams work offline and drops the CDN
+# dependency. Must stay on a version Material supports (v11).
+extra_javascript:
+  - assets/mermaid.min.js
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.top
+    - search.highlight
+    - search.share
+    - toc.follow
+  palette:
+    # dark by default, manual light toggle
+    - scheme: slate
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+    - scheme: default
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+
+markdown_extensions:
+  # mermaid diagram from the README (Architecture Overview)
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - tables
+  - toc:
+      permalink: true

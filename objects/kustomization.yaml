@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: aitools
+
+resources:
+- ./namespace.yaml
+- ./network-policy-otari.yaml
+- ./network-policy-open-webui.yaml
+- ./network-policy-tinyproxy.yaml
+- ./pvc-open-webui.yaml
+- ./pvc-otari-db.yaml
+- ./service-otari.yaml
+- ./service-tinyproxy.yaml
+- ./service-open-webui.yaml
+- ./ingress-otari.yaml
+- ./ingress-open-webui.yaml
+- ./deployment-tinyproxy.yaml
+- ./deployment-otari.yaml
+- ./deployment-open-webui.yaml
+
+configMapGenerator:
+- name: tinyproxy
+  files:
+  - ./tinyproxy/tinyproxy.conf
+secretGenerator:
+- name: otari
+  files:
+  - ./otari/config.yml
+  literals:
+  # replace with your own Fernet key, e.g.: docker run --rm docker.io/mzdotai/otari:latest otari gen-secret-key
+  - OTARI_SECRET_KEY=changeme
+# replace with your own random string
+- name: open-webui
+  literals:
+  - WEBUI_SECRET_KEY=changeme
+generatorOptions:
+  disableNameSuffixHash: true
+

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: otari-db
+  namespace: aitools
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn-crypto-fast
+  resources:
+    requests:
+      storage: 1Gi
