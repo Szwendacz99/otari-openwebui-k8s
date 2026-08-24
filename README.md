@@ -2,36 +2,36 @@
 
 <!--toc:start-->
 - [Secure Otari + Open WebUI Kubernetes Setup](#secure-otari-open-webui-kubernetes-setup)
-  - [Requirements](#requirements)
-  - [Architecture Overview](#architecture-overview)
-  - [Setting up the Kubernetes objects](#setting-up-the-kubernetes-objects)
-    - [Namespace config](#namespace-config)
-    - [Persistent Storage](#persistent-storage)
-      - [Otari Database PVC](#otari-database-pvc)
-      - [Open WebUI PVC](#open-webui-pvc)
-    - [Deployments](#deployments)
-      - [Otari Deployment](#otari-deployment)
-      - [Open WebUI Deployment](#open-webui-deployment)
-      - [Tinyproxy Deployment](#tinyproxy-deployment)
-    - [Services](#services)
-      - [Otari Service](#otari-service)
-      - [Open WebUI Service](#open-webui-service)
-      - [Tinyproxy Service](#tinyproxy-service)
-    - [Network Policies](#network-policies)
-      - [Otari Network Policy](#otari-network-policy)
-      - [Open WebUI Network Policy](#open-webui-network-policy)
-      - [Tinyproxy Network Policy](#tinyproxy-network-policy)
-    - [Ingress](#ingress)
-      - [Otari Ingress](#otari-ingress)
-      - [Open WebUI Ingress](#open-webui-ingress)
-    - [Kustomization](#kustomization)
-  - [Initial Deployment Steps](#initial-deployment-steps)
-  - [Setup Otari connection in Open WebUI](#setup-otari-connection-in-open-webui)
-    - [1. Create an API key in Otari](#1-create-an-api-key-in-otari)
-    - [2. Create the admin account in Open WebUI](#2-create-the-admin-account-in-open-webui)
-    - [3. Add the Otari connection](#3-add-the-otari-connection)
-    - [4. Verify](#4-verify)
-  - [Next steps](#next-steps)
+    - [Requirements](#requirements)
+    - [Architecture Overview](#architecture-overview)
+    - [Setting up the Kubernetes objects](#setting-up-the-kubernetes-objects)
+        - [Namespace config](#namespace-config)
+        - [Persistent Storage](#persistent-storage)
+            - [Otari Database PVC](#otari-database-pvc)
+            - [Open WebUI PVC](#open-webui-pvc)
+        - [Deployments](#deployments)
+            - [Otari Deployment](#otari-deployment)
+            - [Open WebUI Deployment](#open-webui-deployment)
+            - [Tinyproxy Deployment](#tinyproxy-deployment)
+        - [Services](#services)
+            - [Otari Service](#otari-service)
+            - [Open WebUI Service](#open-webui-service)
+            - [Tinyproxy Service](#tinyproxy-service)
+        - [Network Policies](#network-policies)
+            - [Otari Network Policy](#otari-network-policy)
+            - [Open WebUI Network Policy](#open-webui-network-policy)
+            - [Tinyproxy Network Policy](#tinyproxy-network-policy)
+        - [Ingress](#ingress)
+            - [Otari Ingress](#otari-ingress)
+            - [Open WebUI Ingress](#open-webui-ingress)
+        - [Kustomization](#kustomization)
+    - [Initial Deployment Steps](#initial-deployment-steps)
+    - [Setup Otari connection in Open WebUI](#setup-otari-connection-in-open-webui)
+        - [1. Create an API key in Otari](#1-create-an-api-key-in-otari)
+        - [2. Create the admin account in Open WebUI](#2-create-the-admin-account-in-open-webui)
+        - [3. Add the Otari connection](#3-add-the-otari-connection)
+        - [4. Verify](#4-verify)
+    - [Next steps](#next-steps)
 <!--toc:end-->
 
 [**Otari**](https://github.com/mozilla-ai/otari) is "an OpenAI-compatible LLM gateway you own and run yourself."
@@ -55,10 +55,10 @@ ______________________________________________________________________
 ## Requirements
 
 - Kubernetes cluster with:
-  - Storage provider to assign volumes using PersistentVolumeClaim.
-  - Ingress, like [Traefik](https://doc.traefik.io/).
-  - CNI plugin supporting NetworkPolicies (k3s provides one by default).
-  - **SELinux** support (for pod security contexts; the `seLinuxOptions` levels in the manifests are cluster-specific examples, ignored on nodes without SELinux enforcing).
+    - Storage provider to assign volumes using PersistentVolumeClaim.
+    - Ingress, like [Traefik](https://doc.traefik.io/).
+    - CNI plugin supporting NetworkPolicies (k3s provides one by default).
+    - **SELinux** support (for pod security contexts; the `seLinuxOptions` levels in the manifests are cluster-specific examples, ignored on nodes without SELinux enforcing).
 - `kubectl` configured to access the cluster.
 - Domain names for Otari (`otari-web.example.com`) and Open WebUI (`openwebui.example.com`).
 
@@ -340,20 +340,20 @@ spec:
 ```
 
 - **Security Context**:
-  - Runs as non-root user (`12906` - arbitrary non-root UID; `fsGroup` grants write access to mounted volumes).
-  - Custom SELinux context (`s0:c262,c830`) for mandatory access control. The MCS (Multi-Category Security) categories were picked randomly here - similar to what Podman or Docker do by default, when they assign a random category pair to every container, which prevents pods from accessing each other's stuff (files, volumes). On nodes without SELinux enforcing these options are ignored, while on enforcing clusters you should pick your own unique categories per app.
-  - If your k8s distribution handles SELinux labeling in a more organized way (e.g., assigning unique MCS levels per pod automatically, like OpenShift), you might want or need to adjust this configuration instead of hardcoding it.
-  - Read-only root filesystem.
-  - Default seccomp profile (`RuntimeDefault`) and all Linux capabilities dropped.
+    - Runs as non-root user (`12906` - arbitrary non-root UID; `fsGroup` grants write access to mounted volumes).
+    - Custom SELinux context (`s0:c262,c830`) for mandatory access control. The MCS (Multi-Category Security) categories were picked randomly here - similar to what Podman or Docker do by default, when they assign a random category pair to every container, which prevents pods from accessing each other's stuff (files, volumes). On nodes without SELinux enforcing these options are ignored, while on enforcing clusters you should pick your own unique categories per app.
+    - If your k8s distribution handles SELinux labeling in a more organized way (e.g., assigning unique MCS levels per pod automatically, like OpenShift), you might want or need to adjust this configuration instead of hardcoding it.
+    - Read-only root filesystem.
+    - Default seccomp profile (`RuntimeDefault`) and all Linux capabilities dropped.
 - **Configuration**:
-  - Mounts `config.yml` from a Kubernetes `Secret` (see [`kustomization.yaml`](#kustomization)).
-  - Listens on unprivileged port `8000`, pinned via the explicit `OTARI_PORT` env entry: Kubernetes injects a `OTARI_PORT=tcp://<otari-service-ip>:80` variable into the container (service environment links derived from the `otari` Service name), which Otari would otherwise pick up as its listen port - an explicit env entry overrides the injected one, and would fail, since this is a whole address, not just port (integer). 
-   - The master key (root-level access to Otari) is not preconfigured: on first startup Otari generates it automatically, persists its hash, and prints the plaintext **once** to the pod logs. Read and save it right after the first deployment (`kubectl -n aitools logs deployment/otari`) - it is required to sign in to the dashboard and keeps working across pod restarts.
-   - Unlike the master key, the `OTARI_SECRET_KEY` is **not** generated by Otari - you set it yourself in the `otari` Secret (see [`kustomization.yaml`](#kustomization)). It is a Fernet key used to encrypt-at-rest provider credentials and search-tool keys added later through the dashboard: without it, storing those credentials fails, and losing it makes already-stored ones undecryptable. Generate your own with `docker run --rm docker.io/mzdotai/otari:latest otari gen-secret-key` and keep a backup separate from the database.
-  - The automatic bootstrap API key is disabled (`bootstrap_api_key: false` in the config) - otherwise Otari would additionally create a ready-to-use client API key on first startup and print it to the logs. Client API keys are created deliberately via the dashboard instead (see [Setup Otari connection in Open WebUI](#setup-otari-connection-in-open-webui)).
-  - Uses `tinyproxy` for outbound traffic (e.g., to the Mistral API); Open WebUI connects to Otari directly, bypassing tinyproxy thanks to its `no_proxy` setting.
+    - Mounts `config.yml` from a Kubernetes `Secret` (see [`kustomization.yaml`](#kustomization)).
+    - Listens on unprivileged port `8000`, pinned via the explicit `OTARI_PORT` env entry: Kubernetes injects a `OTARI_PORT=tcp://<otari-service-ip>:80` variable into the container (service environment links derived from the `otari` Service name), which Otari would otherwise pick up as its listen port - an explicit env entry overrides the injected one, and would fail, since this is a whole address, not just port (integer). 
+      - The master key (root-level access to Otari) is not preconfigured: on first startup Otari generates it automatically, persists its hash, and prints the plaintext **once** to the pod logs. Read and save it right after the first deployment (`kubectl -n aitools logs deployment/otari`) - it is required to sign in to the dashboard and keeps working across pod restarts.
+      - Unlike the master key, the `OTARI_SECRET_KEY` is **not** generated by Otari - you set it yourself in the `otari` Secret (see [`kustomization.yaml`](#kustomization)). It is a Fernet key used to encrypt-at-rest provider credentials and search-tool keys added later through the dashboard: without it, storing those credentials fails, and losing it makes already-stored ones undecryptable. Generate your own with `docker run --rm docker.io/mzdotai/otari:latest otari gen-secret-key` and keep a backup separate from the database.
+    - The automatic bootstrap API key is disabled (`bootstrap_api_key: false` in the config) - otherwise Otari would additionally create a ready-to-use client API key on first startup and print it to the logs. Client API keys are created deliberately via the dashboard instead (see [Setup Otari connection in Open WebUI](#setup-otari-connection-in-open-webui)).
+    - Uses `tinyproxy` for outbound traffic (e.g., to the Mistral API); Open WebUI connects to Otari directly, bypassing tinyproxy thanks to its `no_proxy` setting.
 - **Storage**:
-  - SQLite database stored in `/data/` (backed by `otari-db` PVC).
+    - SQLite database stored in `/data/` (backed by `otari-db` PVC).
 
 **Otari Config** (`otari/config.yml`) (deployed via Kustomization, later in the guide):
 
@@ -476,14 +476,14 @@ spec:
 Set your private `WEBUI_SECRET_KEY` (a random string) as a literal of the generated `open-webui` Secret - see [`kustomization.yaml`](./objects/kustomization.yaml). The key is injected into the container environment with `secretKeyRef`, as shown in the Deployment above.
 
 - **Security Context**:
-  - Again non-root user (with UID and GID set to arbitrary number `14587`) with SELinux (`s0:c363,c784`).
-  - Read-only root filesystem.
-  - Default seccomp profile (`RuntimeDefault`) and all Linux capabilities dropped.
+    - Again non-root user (with UID and GID set to arbitrary number `14587`) with SELinux (`s0:c363,c784`).
+    - Read-only root filesystem.
+    - Default seccomp profile (`RuntimeDefault`) and all Linux capabilities dropped.
 - External traffic is routed through `tinyproxy` via the `http_proxy`/`https_proxy` variables. The `no_proxy`/`NO_PROXY` variables exempt localhost and `.cluster.local` hosts, so internal connections to Otari (`http://otari/v1`) are made directly, without the proxy. The bare `otari` entry (without a domain suffix) is there because that is the short name you will enter in the Open WebUI connection URL — Kubernetes DNS resolves it to the full `otari.aitools.svc.cluster.local` FQDN within the same namespace. The `.cluster.local` entry covers the FQDN form in case the full address is used instead.
 - **Storage**:
-  - Persistent volume for user data (`/app/backend/data`).
-  - Ephemeral volumes (`static`, `cache`, `tmp`) exist because the container runs with a read-only root filesystem and needs writable directories: Open WebUI rewrites its bundled static assets under `/app/backend/open_webui/static/` on every startup, writes temporary files to `/tmp`, and downloads models into `/app/backend/data/cache`.
-  - The `cache` mount intentionally shadows the `cache` subdir of the persistent volume, keeping downloaded model caches off the PVC (they are reproducible and would fill it quickly).
+    - Persistent volume for user data (`/app/backend/data`).
+    - Ephemeral volumes (`static`, `cache`, `tmp`) exist because the container runs with a read-only root filesystem and needs writable directories: Open WebUI rewrites its bundled static assets under `/app/backend/open_webui/static/` on every startup, writes temporary files to `/tmp`, and downloads models into `/app/backend/data/cache`.
+    - The `cache` mount intentionally shadows the `cache` subdir of the persistent volume, keeping downloaded model caches off the PVC (they are reproducible and would fill it quickly).
 
 ______________________________________________________________________
 
@@ -564,12 +564,12 @@ spec:
 ```
 
 - **Security Context**:
-  - Non-root user (`34439`) with SELinux (`s0:c563,c777`).
-  - Read-only root filesystem.
-  - Default seccomp profile (`RuntimeDefault`) and all Linux capabilities dropped.
+    - Non-root user (`34439`) with SELinux (`s0:c563,c777`).
+    - Read-only root filesystem.
+    - Default seccomp profile (`RuntimeDefault`) and all Linux capabilities dropped.
 - **Configuration**:
-  - Mounts `tinyproxy.conf` from a `ConfigMap` (see [`kustomization.yaml`](#kustomization)).
-  - Ephemeral volumes for `/tmp` and `/var/run`.
+    - Mounts `tinyproxy.conf` from a `ConfigMap` (see [`kustomization.yaml`](#kustomization)).
+    - Ephemeral volumes for `/tmp` and `/var/run`.
 - **Connection logging**: with `LogLevel Connect`, every proxied connection is logged to stdout - inspect with `kubectl -n aitools logs deployment/tinyproxy`.
 
 **Basic Tinyproxy Config** (`tinyproxy/tinyproxy.conf`) (again, deployed via Kustomization later on):
@@ -726,8 +726,8 @@ spec:
 ```
 
 - **Ingress**: Allows traffic from:
-  - Traefik namespace (for ingress).
-  - `aitools` namespace (for internal communication).
+    - Traefik namespace (for ingress).
+    - `aitools` namespace (for internal communication).
 - **Egress**: Allows direct traffic only to Tinyproxy, and to the `kube-system` namespace to access DNS (deployed there in my cluster).
 
 ______________________________________________________________________
@@ -785,9 +785,9 @@ spec:
 
 - **Ingress**: Allows traffic only from Traefik namespace.
 - **Egress**: Restricts outbound traffic to:
-  - Tinyproxy (port `8888`) for external https calls.
-  - Otari directly (port `8000`) - internal chat requests bypass the proxy (`no_proxy`).
-  - Kubernetes DNS (port `53`).
+    - Tinyproxy (port `8888`) for external https calls.
+    - Otari directly (port `8000`) - internal chat requests bypass the proxy (`no_proxy`).
+    - Kubernetes DNS (port `53`).
 
 ______________________________________________________________________
 
@@ -836,8 +836,8 @@ spec:
 
 - **Ingress**: Allows connections only from pods in the `aitools` namespace (Otari and Open WebUI), on the proxy port `8888`.
 - **Egress**: Restricts outbound traffic to:
-  - Any destination on port `443` (matching `ConnectPort 443` in `tinyproxy.conf`).
-  - Kubernetes DNS (port `53`) in the `kube-system` namespace.
+    - Any destination on port `443` (matching `ConnectPort 443` in `tinyproxy.conf`).
+    - Kubernetes DNS (port `53`) in the `kube-system` namespace.
 
 ______________________________________________________________________
 
@@ -987,11 +987,11 @@ ______________________________________________________________________
 
 1. Customize/configure the files to your setup and secrets
 
-   - [Otari config](./objects/otari/config.yml)
-   - `OTARI_SECRET_KEY` literal in the [Kustomization](./objects/kustomization.yaml) - generate one with `docker run --rm docker.io/mzdotai/otari:latest otari gen-secret-key` (required to store provider credentials via the Otari dashboard)
-   - `WEBUI_SECRET_KEY` literal in the [Kustomization](./objects/kustomization.yaml)
-   - Ingress domains (change `otari-web.example.com`, `openwebui.example.com` to use your domains)
-   - PVC storageClassName should be set to something you have available in your cluster, check with `kubectl get storageclasses.storage.k8s.io`
+      - [Otari config](./objects/otari/config.yml)
+      - `OTARI_SECRET_KEY` literal in the [Kustomization](./objects/kustomization.yaml) - generate one with `docker run --rm docker.io/mzdotai/otari:latest otari gen-secret-key` (required to store provider credentials via the Otari dashboard)
+      - `WEBUI_SECRET_KEY` literal in the [Kustomization](./objects/kustomization.yaml)
+      - Ingress domains (change `otari-web.example.com`, `openwebui.example.com` to use your domains)
+      - PVC storageClassName should be set to something you have available in your cluster, check with `kubectl get storageclasses.storage.k8s.io`
 
 2. Apply the k8s objects to your cluster:
 
@@ -1008,18 +1008,18 @@ ______________________________________________________________________
 
 4. Save the Otari master key:
 
-   On first startup Otari generates the master key automatically and prints it to the pod logs **exactly once**. Read it now and store it somewhere safe - it is required to sign in to the Otari dashboard later:
+      On first startup Otari generates the master key automatically and prints it to the pod logs **exactly once**. Read it now and store it somewhere safe - it is required to sign in to the Otari dashboard later:
 
    ```bash
    kubectl -n aitools logs deployment/otari
    ```
 
-   Note this applies to the master key only - the `OTARI_SECRET_KEY` is whatever you configured in the `otari` Secret; Otari never prints it.
+      Note this applies to the master key only - the `OTARI_SECRET_KEY` is whatever you configured in the `otari` Secret; Otari never prints it.
 
 5. Check the Services:
 
-   - Otari: `https://otari-web.example.com`
-   - Open WebUI: `https://openwebui.example.com`
+      - Otari: `https://otari-web.example.com`
+      - Open WebUI: `https://openwebui.example.com`
 
 ______________________________________________________________________
 
@@ -1081,9 +1081,9 @@ Send a test message - if the model responds, the whole chain (Open WebUI -> Otar
 ## Next steps
 
 - Add more hardening to your setup:
-  - Traefik Middleware IPAllowList and separate local router entrypoint for limited access,
-  - Domain whitelist in tinyproxy,
-  - Setting `CORS_ALLOW_ORIGIN` in Open WebUI.
+    - Traefik Middleware IPAllowList and separate local router entrypoint for limited access,
+    - Domain whitelist in tinyproxy,
+    - Setting `CORS_ALLOW_ORIGIN` in Open WebUI.
 - Set `require_pricing: true` in [Otari config](./objects/otari/config.yml) for fail-closed cost accounting - requests for models without configured pricing are then rejected (HTTP 402). Optionally also enable `default_pricing: true` to auto-price models from the bundled genai-prices dataset
 - Adjust resource requests/limits and PVC sizes to your real usage
 - Consider updating the images to newest tags.
