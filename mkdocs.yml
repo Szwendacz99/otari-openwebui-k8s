@@ -7,6 +7,11 @@ site_description: >-
 
 docs_dir: docs
 
+# Single-page site: keep index.md out of the left nav tree, otherwise the nav
+# item repeats the page H1 right below the identical site title
+not_in_nav: |
+  index.md
+
 # Self-hosted mermaid (vendored in CI, see .github/workflows/deploy-site.yaml):
 # Material otherwise lazy-loads mermaid from unpkg.com at view time; defining
 # window.mermaid ourselves makes diagrams work offline and drops the CDN

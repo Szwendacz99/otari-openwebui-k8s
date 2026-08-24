@@ -1,39 +1,5 @@
 # Secure Otari + Open WebUI Kubernetes Setup
 
-<!--toc:start-->
-- [Secure Otari + Open WebUI Kubernetes Setup](#secure-otari-open-webui-kubernetes-setup)
-    - [Requirements](#requirements)
-    - [Architecture Overview](#architecture-overview)
-    - [Setting up the Kubernetes objects](#setting-up-the-kubernetes-objects)
-        - [Namespace config](#namespace-config)
-        - [Persistent Storage](#persistent-storage)
-            - [Otari Database PVC](#otari-database-pvc)
-            - [Open WebUI PVC](#open-webui-pvc)
-        - [Deployments](#deployments)
-            - [Otari Deployment](#otari-deployment)
-            - [Open WebUI Deployment](#open-webui-deployment)
-            - [Tinyproxy Deployment](#tinyproxy-deployment)
-        - [Services](#services)
-            - [Otari Service](#otari-service)
-            - [Open WebUI Service](#open-webui-service)
-            - [Tinyproxy Service](#tinyproxy-service)
-        - [Network Policies](#network-policies)
-            - [Otari Network Policy](#otari-network-policy)
-            - [Open WebUI Network Policy](#open-webui-network-policy)
-            - [Tinyproxy Network Policy](#tinyproxy-network-policy)
-        - [Ingress](#ingress)
-            - [Otari Ingress](#otari-ingress)
-            - [Open WebUI Ingress](#open-webui-ingress)
-        - [Kustomization](#kustomization)
-    - [Initial Deployment Steps](#initial-deployment-steps)
-    - [Setup Otari connection in Open WebUI](#setup-otari-connection-in-open-webui)
-        - [1. Create an API key in Otari](#1-create-an-api-key-in-otari)
-        - [2. Create the admin account in Open WebUI](#2-create-the-admin-account-in-open-webui)
-        - [3. Add the Otari connection](#3-add-the-otari-connection)
-        - [4. Verify](#4-verify)
-    - [Next steps](#next-steps)
-<!--toc:end-->
-
 [**Otari**](https://github.com/mozilla-ai/otari) is "an OpenAI-compatible LLM gateway you own and run yourself."
 
 [**Open WebUI**](https://github.com/open-webui/open-webui) is "an extensible, feature-rich, and user-friendly self-hosted AI platform"

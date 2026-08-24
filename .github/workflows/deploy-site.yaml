@@ -30,10 +30,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install MkDocs Material
-        run: pip install "mkdocs-material~=9.6"
+        run: pip install "mkdocs-material~=9.7.7"
 
       # docs/ is generated, not committed: README becomes the home page and
       # images/objects are copied so the tutorial's relative links keep working
